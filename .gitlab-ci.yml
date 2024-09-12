@@ -1,121 +1,133 @@
 stages:
   - build
   - test
-  - security_scan
+  - sast
+  - dast
   - review
   - deploy
 
-# Stage 1: Build
+# Variáveis de ambiente
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  COMPOSE_FILE: docker-compose.yaml
+  APP_URL: "http://localhost:5000"
+
+# Cache para acelerar builds
+cache:
+  paths:
+    - .docker
+
+# Etapa de Build
 build:
   stage: build
   script:
-    - echo "Building the application..."
-    - python -m venv venv
-    - source venv/bin/activate
-    - pip install -r requirements.txt
-  artifacts:
-    paths:
-      - venv/
-  only:
-    - main
-    - develop
+    - docker build -t my-app .
+  tags:
+    - docker
 
-# Stage 2: Test
-unit_tests:
+# Etapa de Testes Automatizados
+test:
   stage: test
   script:
-    - echo "Running unit tests..."
-    - source venv/bin/activate
-    - pytest --junit-xml=report.xml
-  artifacts:
-    reports:
-      junit: report.xml
-  only:
-    - main
-    - develop
-
-# Stage 3: Static Security Scan (SAST)
-sast_scan:
-  stage: security_scan
-  script:
-    - echo "Running Bandit for static analysis..."
-    - bandit -r . -f html -o bandit-report.html
-  artifacts:
-    paths:
-      - bandit-report.html
-  only:
-    - main
-    - develop
-
-# Stage 4: Dependency Check
-dependency_check:
-  stage: security_scan
-  script:
-    - echo "Running OWASP Dependency-Check..."
-    - dependency-check --project TaskManager --out dependency-report
-  artifacts:
-    paths:
-      - dependency-report/
-  only:
-    - main
-    - develop
-
-# Stage 5: Start Application in Docker for DAST
-start_application:
-  stage: security_scan
-  script:
-    - echo "Starting application in Docker for DAST..."
     - docker-compose up -d
-    - sleep 10 # Aguarda a aplicação estar em execução
-  only:
-    - main
-    - develop
+    - docker exec my-app pytest  # Substitua pelo comando de teste adequado
+    - docker-compose down
+  tags:
+    - docker
 
-# Stage 6: Dynamic Security Scan (DAST) using OWASP ZAP
-dast_scan:
-  stage: security_scan
+# Etapa de Análise Estática de Código (SAST)
+sast:
+  stage: sast
+  image: python:3.9
   script:
-    - echo "Running OWASP ZAP for dynamic security analysis..."
-    - docker run -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:5000 -r zap-report.html
+    - pip install bandit
+    - bandit -r .
+  tags:
+    - docker
+
+# Etapa de Análise de Dependências
+dependency-check:
+  stage: sast
+  image: owasp/dependency-check
+  script:
+    - dependency-check.sh --project my-app --out .
   artifacts:
     paths:
-      - zap-report.html
-  only:
-    - main
-    - develop
+      - dependency-check-report.html
+  tags:
+    - docker
 
-# Stage 7: Review (Temporary Review Environment)
+# Etapa de Análise Dinâmica de Segurança (DAST)
+dast:
+  stage: dast
+  image: owasp/zap2docker-stable
+  services:
+    - name: docker:19.03.12-dind
+  script:
+    - docker-compose up -d
+    - docker run -t owasp/zap2docker-stable zap-baseline.py -t $APP_URL
+    - docker-compose down
+  artifacts:
+    paths:
+      - zap_report.html
+  tags:
+    - docker
+
+# Revisão de Merge Requests
 review:
   stage: review
   script:
-    - echo "Setting up a temporary review environment..."
     - docker-compose up -d
+    - echo "Ambiente de revisão criado em $APP_URL"
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: http://$CI_COMMIT_REF_NAME.example.com
-  only:
-    - merge_requests
+    url: $APP_URL
+    on_stop: stop_review
+  tags:
+    - docker
 
-# Stage 8: Deploy to Staging
-deploy_staging:
+# Deploy para Estágio
+deploy_stage:
   stage: deploy
   script:
-    - echo "Deploying to the staging environment..."
-    - docker-compose -f docker-compose.stage.yml up -d
+    - docker-compose -f docker-compose.stage.yaml up -d
   environment:
     name: staging
     url: http://staging.example.com
-  only:
-    - main
+    on_stop: stop_stage
+  tags:
+    - docker
 
-# Stage 9: Continuous Delivery (Deploy to Production)
-deploy_production:
+# Ferramenta de Monitoramento Pós-Implantação
+monitor:
   stage: deploy
   script:
-    - echo "Deploying to production..."
-    - docker-compose -f docker-compose.prod.yml up -d
+    - echo "Instalando ferramentas de monitoramento..."
+    - docker run --rm -d monitoring-tool:latest  # Substitua pela ferramenta de monitoramento adequada
+  tags:
+    - docker
+
+# Cleanup de Revisão
+stop_review:
+  stage: review
+  script:
+    - docker-compose down
+  when: manual
   environment:
-    name: production
-    url: http://example.com
-  only:
-    - tags
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+  tags:
+    - docker
+
+# Cleanup de Estágio
+stop_stage:
+  stage: deploy
+  script:
+    - docker-compose down
+  when: manual
+  environment:
+    name: staging
+    action: stop
+  tags:
+    - docker
