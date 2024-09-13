@@ -1,5 +1,5 @@
 variables:
-  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_CERTDIR: ""
   DOCKER_CLIENT_TIMEOUT: 600
   COMPOSE_HTTP_TIMEOUT: 600    
   DOCKER_BUILDKIT: 0
@@ -22,13 +22,6 @@ build_job:
     - name: docker:20.10.16-dind
       command: ["--host=tcp://0.0.0.0:2375", "--tls=false"]
 
-   variables:
-    DOCKER_HOST: "tcp://docker:2375"
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
-    GIT_SSL_NO_VERIFY: "1"
-
-
    before_script:
     - docker info
     - curl http://docker:2375/_ping || (echo "Docker daemon is not running" && exit 1)
@@ -36,6 +29,8 @@ build_job:
    script:
      - docker info
      - docker build -t ex-build-dev:latest .
+
+   privileged: true
 
 test_job:
    stage: test1
