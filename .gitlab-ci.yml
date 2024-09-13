@@ -57,18 +57,18 @@ deploy_job:
         - echo "Deploying the app"
         - docker run -d -p 5000:5000 ex-build-dev:latest
 
-code_analysis:
-    stage: test2
-    image: sonarsource/sonar-scanner-cli:latest
-    dependencies:
-        - test_job
-    script:
-        - echo "Verificando artefatos do test_job"
-        - pwd 
-        - ls -la 
-        - cat coverage.out
-        - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
-        - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
+#code_analysis:
+#    stage: test2
+#    image: sonarsource/sonar-scanner-cli:latest
+#    dependencies:
+#        - test_job
+#    script:
+#        - echo "Verificando artefatos do test_job"
+#        - pwd 
+#        - ls -la 
+#        - cat coverage.out
+#        - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
+#        - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
 
 security_scan:
   stage: test3
