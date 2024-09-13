@@ -1,5 +1,5 @@
 import pytest
-from todo_project.models import User, Task, load_user
+from todo_project.models import User, Task
 
 
 @pytest.fixture
