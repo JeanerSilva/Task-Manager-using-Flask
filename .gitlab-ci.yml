@@ -8,16 +8,23 @@ variables:
 
 stages:
   - build
-  - sast
-  - test2
-  - test3
-  - test4
+  - security
   - deploy
   - notify
 
+dependency_check:
+   stage: security
+   image: owasp/dependency-check
+   script:
+      - echo "Verificando dependencias"
+      - pwd 
+      - ls -la 
+      - Dependency-Check Core --project "Task-Manager-using-Flask" --scan . --format "HTML" --out dependency-check-report.html
+      - cat dependency-check-report.html
+      - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 bandit-sast:
-  stage: sast
+  stage: security
   image: python:3.9
   script:
     - pip install bandit
@@ -30,16 +37,16 @@ bandit-sast:
 
 
 code_analysis:
-    stage: test2
+    stage: security
     image: sonarsource/sonar-scanner-cli:latest
     script:
-      - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.token=sqp_5a77affbc23369fa5f19a5d01c5e2fe91fec5d8b -Dsonar.host.url=http://localhost:9000 -Dsonar.py.coverage.reportPaths=coverage.out -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+      - sonar-scanner -Dproject.settings=sonar-project.properties
       - cat coverage.out
       - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
       - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
 
 security_scan:
-  stage: test3
+  stage: security
   image: docker:stable
   services:
     - docker:dind
@@ -56,17 +63,6 @@ security_scan:
       - /root/.cache/trivy
   only:
     - master
-
-dependency_check:
-   stage: test4
-   image: owasp/dependency-check
-   script:
-      - echo "Verificando dependencias"
-      - pwd 
-      - ls -la 
-      - Dependency-Check Core --project "my-golang-app" --scan . --format "HTML" --out dependency-check-report.html
-      - cat dependency-check-report.html
-      - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 deploy_job:
    stage: deploy
