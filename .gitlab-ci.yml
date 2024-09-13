@@ -1,5 +1,5 @@
 variables:
-  DOCKER_TLS_CERTDIR: ""
+  DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_CLIENT_TIMEOUT: 600
   COMPOSE_HTTP_TIMEOUT: 600    
   DOCKER_BUILDKIT: 0
@@ -16,11 +16,10 @@ stages:
 
 build_job:
    stage: build
-   image: docker:20.10.16
+   image: docker:latest
 
    services:
-    - name: docker:20.10.16-dind
-      command: ["--host=tcp://0.0.0.0:2375", "--tls=false"]
+    - docker:dind
 
    before_script:
     - docker info
