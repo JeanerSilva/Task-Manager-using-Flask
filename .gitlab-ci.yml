@@ -5,6 +5,7 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600    
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0    
+  LOCALHOST_IP: http://10.11.0.1:9000
 
 stages:
   - build
@@ -41,9 +42,7 @@ code_analysis:
     stage: security
     image: sonarsource/sonar-scanner-cli:latest
     script:
-      - ifconfig
-      - LOCALHOST_IP=$(hostname --all-ip-addresses | awk '{print $1}')
-      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=http://$LOCALHOST_IP:9000   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.py.coverage.reportPaths=coverage.out
+      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.py.coverage.reportPaths=coverage.out
       - cat coverage.out
       - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
       - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
