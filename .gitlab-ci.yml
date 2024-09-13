@@ -20,9 +20,7 @@ test_job:
   script:
     - echo "Testing the app"
     - pip install pytest pytest-cov  
-    - pip install flask
-    - pip install flask_sqlalchemy
-    - pip install flask_login
+    - pip install -r requirements.txt
     - mkdir -p coverage  
     - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  
     - pwd
