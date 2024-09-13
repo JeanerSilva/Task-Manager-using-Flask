@@ -8,11 +8,27 @@ variables:
   LOCALHOST_IP: http://10.44.0.11:9000
 
 stages:
-  - build
+  - test
   - security
   - deploy
   - notify
   - security2
+
+test_job:
+  stage: test
+  image: python:3.9  # Usar uma imagem Python em vez de Golang
+  script:
+    - echo "Testing the app"
+    - pip install pytest pytest-cov  # Instalar pytest e o plugin de cobertura
+    - mkdir -p coverage  # Criar a pasta para o relatório de cobertura
+    - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  # Rodar os testes e gerar o relatório de cobertura
+    - pwd
+    - ls -la coverage  # Listar arquivos gerados na pasta coverage
+    - cat coverage/coverage.xml  # Exibir o conteúdo do arquivo de cobertura
+  artifacts:
+    paths:
+      - coverage/coverage.xml  # Guardar o relatório de cobertura como artifact
+    expire_in: 1 week  # Configurar a expiração dos artifacts
 
 dependency_check:
    stage: security2
@@ -42,7 +58,7 @@ code_analysis:
     stage: security
     image: sonarsource/sonar-scanner-cli:latest
     script:
-      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.python.coverage.reportPaths=coverage.out -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
 
 
       - cat coverage.out
