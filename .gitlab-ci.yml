@@ -29,7 +29,7 @@ bandit-sast:
   script:
     - pip install bandit
     - bandit --version
-    - bandit -r /app/todo_project
+    - bandit -r .
   allow_failure: true
   artifacts:
     reports:
