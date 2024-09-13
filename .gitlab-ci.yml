@@ -15,20 +15,6 @@ stages:
   - deploy
   - notify
 
-build_job:
-   stage: build
-   image: docker:latest
-
-   services:
-    - name: docker:dind
-      command: ["--tls=false"] # Desativar TLS, se não necessário
-
-   before_script:
-    - docker info
-   
-   script:
-     - docker build -t ex-build-dev:latest .
-
 
 bandit-sast:
   stage: sast
@@ -42,24 +28,6 @@ bandit-sast:
     reports:
       sast: result-bandit.json
 
-
-deploy_job:
-    stage: deploy
-    image: docker:20.10.16
-    services:
-        - docker:20.10.16-dind
-    before_script:        
-        - echo "Remove anterior"
-        - PORT_CONTAINERS=$(docker ps --filter "publish=5000" -q)
-        - echo $PORT_CONTAINERS
-        - if [ -n "$PORT_CONTAINERS" ]; then
-            docker stop $PORT_CONTAINERS;
-            docker rm $PORT_CONTAINERS;
-            sleep 5; 
-          fi
-    script:
-        - echo "Deploying the app"
-        - docker run -d -p 5000:5000 ex-build-dev:latest
 
 code_analysis:
     stage: test2
@@ -108,3 +76,27 @@ dependency_check:
       - Dependency-Check Core --project "my-golang-app" --scan . --format "HTML" --out dependency-check-report.html
       - cat dependency-check-report.html
       - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+
+deploy_job:
+   stage: deploy
+   image: docker:latest
+
+   services:
+    - name: docker:dind
+      command: ["--tls=false"] # Desativar TLS, se não necessário
+
+   before_script:        
+        - echo "Remove anterior"
+        - PORT_CONTAINERS=$(docker ps --filter "publish=5000" -q)
+        - echo $PORT_CONTAINERS
+        - if [ -n "$PORT_CONTAINERS" ]; then
+            docker stop $PORT_CONTAINERS;
+            docker rm $PORT_CONTAINERS;
+            sleep 5; 
+          fi
+   
+   script:
+     - docker build -t ex-build-dev:latest .
+     - echo "Deploying the app"
+     - docker run -d -p 5000:5000 ex-build-dev:latest
+
