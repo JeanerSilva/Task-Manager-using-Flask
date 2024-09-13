@@ -41,7 +41,7 @@ code_analysis:
     image: sonarsource/sonar-scanner-cli:latest
     script:
       - apt get update
-      - apt install --only-upgrade util-linux
+      - apt install --only-upgrade util-linux /y
       - LOCALHOST_IP=$(hostname --all-ip-addresses | awk '{print $1}')
       - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=http://$LOCALHOST_IP:9000   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.py.coverage.reportPaths=coverage.out
       - cat coverage.out
