@@ -6,6 +6,7 @@ variables:
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0    
   LOCALHOST_IP: http://10.44.0.11:9000
+  APP_IP: http://10.44.0.11:5000
 
 stages:
   - test
@@ -82,6 +83,21 @@ security_scan:
       - /root/.cache/trivy
   only:
     - master
+
+owasp_zap_job:
+  stage: security
+  image: owasp/zap2docker-stable
+  script:
+    # Substitua 'localhost' pelo endereço real da sua aplicação Python, se necessário
+    - echo "Starting OWASP ZAP Scan"
+    - zap-baseline.py -t $APP_IP -r owasp_report.html
+  services:
+    - name: python:3.9
+      command: ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+  artifacts:
+    paths:
+      - owasp_report.html
+    expire_in: 1 week
 
 deploy_job:
    stage: deploy
