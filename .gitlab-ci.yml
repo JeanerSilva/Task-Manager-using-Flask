@@ -107,3 +107,4 @@ deploy_job:
      - echo "Deploying the app"
      - docker run -d -p 5000:5000 ex-build-dev:latest
 
+ 
