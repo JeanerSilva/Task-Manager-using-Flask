@@ -42,7 +42,9 @@ code_analysis:
     stage: security
     image: sonarsource/sonar-scanner-cli:latest
     script:
-      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.py.coverage.reportPaths=coverage.out
+      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.python.coverage.reportPaths=coverage.out -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+
+
       - cat coverage.out
       - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
       - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
