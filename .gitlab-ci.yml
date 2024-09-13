@@ -4,6 +4,8 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600    
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0    
+  DOCKER_HOST: tcp://docker:2375/
+  
 
 stages:
   - build
@@ -17,20 +19,14 @@ stages:
 build_job:
    stage: build
    image: docker:20.10.16
-   services:
-    - name: docker:20.10-dind
-      command: ["--tls=false", "--host=tcp://0.0.0.0:2375"]
    variables:
-        DOCKER_HOST: tcp://docker:2375
-        DOCKER_DRIVER: overlay2
-        DOCKER_TLS_CERTDIR: "/certs"
-        GIT_SSL_NO_VERIFY: "1"
-   before_script:
-   # - DOCKER_IP=$(getent hosts docker | awk '{ print $1 }')
-   # - export DOCKER_HOST="tcp://$DOCKER_IP:2375"
-    - docker info
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+    GIT_SSL_NO_VERIFY: "1"
+   services:
+       - docker:20.10.16-dind
    script:
-       - docker -H tcp://docker:2375 info
        - docker build -t ex-build-dev:latest .
 
 test_job:
