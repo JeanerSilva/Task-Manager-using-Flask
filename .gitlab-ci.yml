@@ -30,7 +30,6 @@ build_job:
      - docker info
      - docker build -t ex-build-dev:latest .
 
-   privileged: true
 
 test_job:
    stage: test1
