@@ -15,7 +15,7 @@ stages:
 dependency_check:
    stage: security
    image: owasp/dependency-check
-   script:
+   script:      
       - echo "Verificando dependencias"
       - pwd 
       - ls -la 
@@ -40,7 +40,8 @@ code_analysis:
     stage: security
     image: sonarsource/sonar-scanner-cli:latest
     script:
-      - sonar-scanner -Dproject.settings=sonar-project.properties
+      - LOCALHOST_IP=hostname -I | awk '{print $1}'
+      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=http://$LOCALHOST_IP:9000   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.py.coverage.reportPaths=coverage.out
       - cat coverage.out
       - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
       - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
