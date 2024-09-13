@@ -4,8 +4,6 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600    
   DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0    
-  DOCKER_HOST: tcp://docker:2375/
-  
 
 stages:
   - build
@@ -21,6 +19,11 @@ build_job:
    image: docker:20.10.16
    services:
        - docker:20.10.16-dind
+   variables:
+        DOCKER_HOST: tcp://docker:2375
+        DOCKER_DRIVER: overlay2
+        DOCKER_TLS_CERTDIR: "/certs"
+        GIT_SSL_NO_VERIFY: "1"
    script:
        - docker build -t ex-build-dev:latest .
 
