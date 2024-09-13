@@ -25,6 +25,7 @@ build_job:
         DOCKER_TLS_CERTDIR: "/certs"
         GIT_SSL_NO_VERIFY: "1"
    script:
+       - docker -H tcp://docker:2375 info
        - docker build -t ex-build-dev:latest .
 
 test_job:
