@@ -18,13 +18,16 @@ build_job:
    stage: build
    image: docker:20.10.16
    services:
-       - docker:20.10.16-dind
+    - name: docker:20.10-dind
+      command: ["--tls=false", "--host=tcp://0.0.0.0:2375"]
+
    variables:
         DOCKER_HOST: tcp://docker:2375
         DOCKER_DRIVER: overlay2
         DOCKER_TLS_CERTDIR: "/certs"
         GIT_SSL_NO_VERIFY: "1"
    script:
+       - docker info
        - docker -H tcp://docker:2375 info
        - docker build -t ex-build-dev:latest .
 
