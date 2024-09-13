@@ -63,7 +63,6 @@ code_analysis:
     script:
         - sonar-scanner \
            -Dsonar.projectKey=Task-Manager-using-Flask \
-           -Dsonar.sources=. \
            -Dsonar.host.url=http://localhost:9000 \
            -Dsonar.token=sqp_5a77affbc23369fa5f19a5d01c5e2fe91fec5d8b \
            -Dsonar.language=py \
