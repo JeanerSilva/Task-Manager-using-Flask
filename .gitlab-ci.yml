@@ -1,121 +1,110 @@
-stages:
-  - build
-  - test
-  - security_scan
-  - review
-  - deploy
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_CLIENT_TIMEOUT: 600
+  COMPOSE_HTTP_TIMEOUT: 600    
+  DOCKER_BUILDKIT: 0
+  COMPOSE_DOCKER_CLI_BUILD: 0    
+  LOCALHOST_IP: http://10.44.0.11:9000
 
-# Stage 1: Build
-build:
-  stage: build
+stages:
+  - test
+  - security
+  - deploy
+  - notify
+  - security2
+
+test_job:
+  stage: test
+  image: python:3.9  
   script:
-    - echo "Building the application..."
-    - python -m venv venv
-    - source venv/bin/activate
-    - pip install -r requirements.txt
+    - echo "Testing the app"
+    - pip install pytest pytest-cov  
+    - mkdir -p coverage  
+    - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  
+    - pwd
+    - ls -la coverage  
+    - cat coverage/coverage.xml  
   artifacts:
     paths:
-      - venv/
-  only:
-    - main
-    - develop
+      - coverage/coverage.xml  
+    expire_in: 1 week  
 
-# Stage 2: Test
-unit_tests:
-  stage: test
+dependency_check:
+   stage: security2
+   image: owasp/dependency-check
+   script:      
+      - echo "Verificando dependencias"
+      - pwd 
+      - ls -la 
+      - Dependency-Check Core --project "Task-Manager-using-Flask" --scan . --format "HTML" --out dependency-check-report.html
+      - cat dependency-check-report.html
+      - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+
+bandit-sast:
+  stage: security2
+  image: python:3.9
   script:
-    - echo "Running unit tests..."
-    - source venv/bin/activate
-    - pytest --junit-xml=report.xml
+    - pip install bandit
+    - bandit --version
+    - bandit -r .
+  allow_failure: true
   artifacts:
     reports:
-      junit: report.xml
-  only:
-    - main
-    - develop
+      sast: result-bandit.json
 
-# Stage 3: Static Security Scan (SAST)
-sast_scan:
-  stage: security_scan
+
+code_analysis:
+    stage: security
+    image: sonarsource/sonar-scanner-cli:latest
+    script:
+      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+
+
+      - cat coverage.out
+      - if [ -f coverage.out ]; then cat coverage.out; else echo "coverage.out não encontrado"; fi
+      - sonar-scanner -D sonar.go.coverage.reportPaths=coverage.out
+
+security_scan:
+  stage: security2
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - apk add --no-cache curl
+    - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
   script:
-    - echo "Running Bandit for static analysis..."
-    - bandit -r . -f html -o bandit-report.html
-  artifacts:
+    - trivy image --severity HIGH,CRITICAL reserva-salas
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - bandit-report.html
+      - /root/.cache/trivy
   only:
-    - main
-    - develop
+    - master
 
-# Stage 4: Dependency Check
-dependency_check:
-  stage: security_scan
-  script:
-    - echo "Running OWASP Dependency-Check..."
-    - dependency-check --project TaskManager --out dependency-report
-  artifacts:
-    paths:
-      - dependency-report/
-  only:
-    - main
-    - develop
+deploy_job:
+   stage: deploy
+   image: docker:latest
 
-# Stage 5: Start Application in Docker for DAST
-start_application:
-  stage: security_scan
-  script:
-    - echo "Starting application in Docker for DAST..."
-    - docker-compose up -d
-    - sleep 10 # Aguarda a aplicação estar em execução
-  only:
-    - main
-    - develop
+   services:
+    - name: docker:dind
+      command: ["--tls=false"] # Desativar TLS, se não necessário
 
-# Stage 6: Dynamic Security Scan (DAST) using OWASP ZAP
-dast_scan:
-  stage: security_scan
-  script:
-    - echo "Running OWASP ZAP for dynamic security analysis..."
-    - docker run -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:5000 -r zap-report.html
-  artifacts:
-    paths:
-      - zap-report.html
-  only:
-    - main
-    - develop
+   before_script:        
+        - echo "Remove anterior"
+        - PORT_CONTAINERS=$(docker ps --filter "publish=5000" -q)
+        - echo $PORT_CONTAINERS
+        - if [ -n "$PORT_CONTAINERS" ]; then
+            docker stop $PORT_CONTAINERS;
+            docker rm $PORT_CONTAINERS;
+            sleep 5; 
+          fi
+   
+   script:
+     - docker build -t ex-build-dev:latest .
+     - echo "Deploying the app"
+     - docker run -d -p 5000:5000 ex-build-dev:latest
 
-# Stage 7: Review (Temporary Review Environment)
-review:
-  stage: review
-  script:
-    - echo "Setting up a temporary review environment..."
-    - docker-compose up -d
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    url: http://$CI_COMMIT_REF_NAME.example.com
-  only:
-    - merge_requests
-
-# Stage 8: Deploy to Staging
-deploy_staging:
-  stage: deploy
-  script:
-    - echo "Deploying to the staging environment..."
-    - docker-compose -f docker-compose.stage.yml up -d
-  environment:
-    name: staging
-    url: http://staging.example.com
-  only:
-    - main
-
-# Stage 9: Continuous Delivery (Deploy to Production)
-deploy_production:
-  stage: deploy
-  script:
-    - echo "Deploying to production..."
-    - docker-compose -f docker-compose.prod.yml up -d
-  environment:
-    name: production
-    url: http://example.com
-  only:
-    - tags
+ 
