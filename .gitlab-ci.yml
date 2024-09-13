@@ -16,19 +16,19 @@ stages:
 
 test_job:
   stage: test
-  image: python:3.9  # Usar uma imagem Python em vez de Golang
+  image: python:3.9  
   script:
     - echo "Testing the app"
-    - pip install pytest pytest-cov  # Instalar pytest e o plugin de cobertura
-    - mkdir -p coverage  # Criar a pasta para o relatório de cobertura
-    - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  # Rodar os testes e gerar o relatório de cobertura
+    - pip install pytest pytest-cov  
+    - mkdir -p coverage  
+    - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  
     - pwd
-    - ls -la coverage  # Listar arquivos gerados na pasta coverage
-    - cat coverage/coverage.xml  # Exibir o conteúdo do arquivo de cobertura
+    - ls -la coverage  
+    - cat coverage/coverage.xml  
   artifacts:
     paths:
-      - coverage/coverage.xml  # Guardar o relatório de cobertura como artifact
-    expire_in: 1 week  # Configurar a expiração dos artifacts
+      - coverage/coverage.xml  
+    expire_in: 1 week  
 
 dependency_check:
    stage: security2
@@ -105,6 +105,6 @@ deploy_job:
    script:
      - docker build -t ex-build-dev:latest .
      - echo "Deploying the app"
-     - docker run -d -p 5000:5000 ex-build-dev:latest
+     - docker run -d -p 5000:5000 ex-build-dev:latest 
 
  
