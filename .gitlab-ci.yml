@@ -60,18 +60,16 @@ deploy_job:
 code_analysis:
     stage: test2
     image: sonarsource/sonar-scanner-cli:latest
-    dependencies:
-        - test_job
     script:
         - sonar-scanner \
            -Dsonar.projectKey=Task-Manager-using-Flask \
            -Dsonar.sources=. \
            -Dsonar.host.url=http://localhost:9000 \
-           -Dsonar.token=sqp_5a77affbc23369fa5f19a5d01c5e2fe91fec5d8b
-           -Dsonar.language=py
-           -Dsonar.py.coverage.reportPaths=coverage.out
-           -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
-           -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml
+           -Dsonar.token=sqp_5a77affbc23369fa5f19a5d01c5e2fe91fec5d8b \
+           -Dsonar.language=py \
+           -Dsonar.py.coverage.reportPaths=coverage.out \
+           -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html \
+           -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml \
            -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
 
         - cat coverage.out
