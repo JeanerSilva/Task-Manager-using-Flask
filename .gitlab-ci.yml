@@ -8,7 +8,7 @@ variables:
 
 stages:
   - build
-  - test1
+  - sast
   - test2
   - test3
   - test4
@@ -30,13 +30,17 @@ build_job:
      - docker build -t ex-build-dev:latest .
 
 
-test_job:
-   stage: test1
-   image: python:3.11-slim
-   script:
-      - echo "Testing the app"
-      - pip install pytest
-     # - pytest
+bandit-sast:
+  stage: sast
+  image: python:3.9
+  script:
+    - pip install bandit
+    - bandit --version
+    - bandit -r /app/todo_project
+  allow_failure: true
+  artifacts:
+    reports:
+      sast: result-bandit.json
 
 
 deploy_job:
