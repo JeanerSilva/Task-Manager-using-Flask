@@ -3,17 +3,19 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   DOCKER_CLIENT_TIMEOUT: 600
   COMPOSE_HTTP_TIMEOUT: 600    
-  DOCKER_BUILDKIT: 0
   COMPOSE_DOCKER_CLI_BUILD: 0    
-  LOCALHOST_IP: http://10.44.0.11:9000
-  APP_IP: http://10.44.0.11:5000
+  LOCALHOST_SONAR_IP: http://192.168.98.10:9000
+  APP_IP: http://127.0.0.1:5000
 
 stages:
   - test
   - security
-  - deploy
+  - review
+  - staging
+  - dast
+  - deploy 
+  - monitoring
   - notify
-  - security2
 
 test_job:
   stage: test
@@ -33,8 +35,10 @@ test_job:
     expire_in: 1 week  
 
 dependency_check:
-   stage: security2
+   stage: security
    image: owasp/dependency-check
+   dependencies: 
+     - test_job
    script:      
       - echo "Verificando dependencias"
       - pwd 
@@ -44,12 +48,12 @@ dependency_check:
       - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 bandit-sast:
-  stage: security2
+  stage: security
   image: python:3.9
   script:
     - pip install bandit
     - bandit --version
-    - bandit -r .
+    - bandit -r . --format json --output result-bandit.json
   allow_failure: true
   artifacts:
     reports:
@@ -57,16 +61,18 @@ bandit-sast:
 
 
 code_analysis:
-    stage: security
-    image: sonarsource/sonar-scanner-cli:latest
-    script:
-      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_IP   -Dsonar.token=sqp_add80868ce022027164bfcc8e682351b6a2a3ead -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+   stage: security
+   image: sonarsource/sonar-scanner-cli:latest
+   dependencies:
+     - test_job  
+   script:
+      - sonar-scanner   -Dsonar.projectKey=Task-Manager-using-Flask   -Dsonar.sources=.   -Dsonar.host.url=$LOCALHOST_SONAR_IP   -Dsonar.token=sqp_59a3279f25ca8b97dadc39de132eaec8f2b816e6 -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
       - cat coverage/coverage.xml
       - if [ -f coverage/coverage.xml]; then cat coverage/coverage.xml; else echo "coverage/coverage.xml não encontrado"; fi
       - sonar-scanner -D sonar.go.coverage.reportPaths=coverage/coverage.xml
 
 security_scan:
-  stage: security2
+  stage: security
   image: docker:stable
   services:
     - docker:dind
@@ -76,7 +82,8 @@ security_scan:
     - apk add --no-cache curl
     - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
   script:
-    - trivy image --severity HIGH,CRITICAL reserva-salas
+    - docker build -t ex-build-dev:latest .
+    - trivy image --severity HIGH,CRITICAL ex-build-dev:latest
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -84,28 +91,75 @@ security_scan:
   only:
     - master
 
-owasp_zap_job:
-  stage: security
-  image: owasp/zap2docker-stable
+review_job:
+  stage: review
   script:
-    # Substitua 'localhost' pelo endereço real da sua aplicação Python, se necessário
-    - echo "Starting OWASP ZAP Scan"
-    - zap-baseline.py -t $APP_IP -r owasp_report.html
-  services:
-    - name: python:3.9
-      command: ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+    - echo "Deploying review environment"
+    - docker build -t review-environment .
+    - docker run -d -p 5000:5000 review-environment
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.$APP_IP
+  only:
+    - merge_requests
   artifacts:
     paths:
-      - owasp_report.html
+      - review_report.html
     expire_in: 1 week
+
+stage_deploy:
+  stage: staging
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  script:
+    - echo "Deploying to stage environment"
+    - docker build -t ex-build-dev:latest .
+    - echo "Deploying the app"
+    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
+  environment:
+    name: stage
+    url: http://$APP_IP
+  only:
+    - master
+  when: manual
+  artifacts:
+    paths:
+      - stage_report.html
+    expire_in: 1 week
+
+zap_security_scan:
+  stage: dast
+  image: owasp/zap2docker-stable
+  dependencies:
+    - stage_deploy
+  script:
+    - docker run -u zap -d --name zap -p 8081:5000 owasp/zap2docker-stable zap.sh -daemon -host 0.0.0.0 -port 5000
+    - sleep 15
+    - curl "http://localhost:8081/JSON/spider/action/scan/?url=http://$APP_IP&maxChildren=&recurse=&contextName=&subtreeOnly="
+    - sleep 15
+    - curl "http://localhost:8081/JSON/ascan/action/scan/?url=http://$APP_IP"
+    - sleep 60
+    - curl "http://localhost:8081/OTHER/core/other/htmlreport/" -o zap_report.html#
+  artifacts:
+    paths:
+      - zap_report.html
+    expire_in: 1 week
+  after_script:
+    - docker stop zap
+    - docker rm zap
+    - docker stop my-app
+    - docker rm my-app
+    - docker stop todo_list_app
 
 deploy_job:
    stage: deploy
    image: docker:latest
-
    services:
     - name: docker:dind
-      command: ["--tls=false"] # Desativar TLS, se não necessário
+      command: ["--tls=false"]
 
    before_script:        
         - echo "Remove anterior"
@@ -120,6 +174,64 @@ deploy_job:
    script:
      - docker build -t ex-build-dev:latest .
      - echo "Deploying the app"
-     - docker run -d -p 5000:5000 ex-build-dev:latest
+     - docker compose up --build -d
+monitoring_setup:
+  stage: monitoring
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    # Instalar e configurar Elastic Stack (ELK)
+    - echo "Instalando e configurando ELK"
+    - docker pull docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    - docker pull docker.elastic.co/kibana/kibana:7.10.1
+    - docker pull docker.elastic.co/beats/filebeat:7.10.1
 
- 
+    # Executar Elasticsearch
+    - docker run -d --name elasticsearch -p 9200:9200 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+
+    # Executar Kibana
+    - docker run -d --name kibana --link elasticsearch:elasticsearch -p 5601:5601 docker.elastic.co/kibana/kibana:7.10.1
+
+    # Instalar e configurar o Filebeat para monitorar logs da aplicação
+    - echo "Configurando Filebeat"
+    - |
+      docker run -d --name filebeat --user=root --volume="$(pwd)/filebeat.yml:/usr/share/filebeat/filebeat.yml" \
+        --volume="/var/log:/var/log" docker.elastic.co/beats/filebeat:7.10.1
+
+    # Instalar e configurar Prometheus e Grafana
+    - echo "Instalando e configurando Prometheus e Grafana"
+    - docker pull prom/prometheus
+    - docker pull grafana/grafana:latest
+
+    # Executar Prometheus
+    - docker run -d --name prometheus -p 9090:9090 prom/prometheus
+
+    # Executar Grafana
+    - docker run -d --name grafana -p 3000:3000 grafana/grafana
+
+    # Configurar alertas no Prometheus
+    - echo "Configurando alertas no Prometheus"
+    - |
+      echo "alerting rules:" > alert.rules.yml
+      echo "groups:" >> alert.rules.yml
+      echo "  - name: ExampleAlert" >> alert.rules.yml
+      echo "    rules:" >> alert.rules.yml
+      echo "    - alert: HighErrorRate" >> alert.rules.yml
+      echo "      expr: job:request_errors:rate5m > 0.05" >> alert.rules.yml
+      echo "      for: 5m" >> alert.rules.yml
+      echo "      labels:" >> alert.rules.yml
+      echo "        severity: warning" >> alert.rules.yml
+      echo "      annotations:" >> alert.rules.yml
+      echo "        summary: High error rate" >> alert.rules.yml
+
+    # Adicionar monitoramento e alertas no Grafana
+    - echo "Adicionando alertas no Grafana"
+    - docker exec grafana grafana-cli plugins install grafana-simple-json-datasource
+    - docker restart grafana
+
+  environment:
+    name: production
+    url: http://$APP_IP
+  only:
+    - master
