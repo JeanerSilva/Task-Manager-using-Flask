@@ -92,21 +92,21 @@ stages:
 #  only:
 #    - master
 
-review_job:
-  stage: review
-  script:
-    - echo "Deploying review environment"
-    - docker build -t review-environment .
-    - docker run -d -p 5000:5000 review-environment
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    url: http://$CI_ENVIRONMENT_SLUG.$APP_IP
-  only:
-    - merge_requests
-  artifacts:
-    paths:
-      - review_report.html
-    expire_in: 1 week
+#review_job:
+#  stage: review
+#  script:
+#    - echo "Deploying review environment"
+#    - docker build -t review-environment .
+#    - docker run -d -p 5000:5000 review-environment
+#  environment:
+#    name: review/$CI_COMMIT_REF_NAME
+#    url: http://$CI_ENVIRONMENT_SLUG.$APP_IP
+#  only:
+#    - merge_requests
+#  artifacts:
+#    paths:
+#      - review_report.html
+#    expire_in: 1 week
 
 stage_deploy:
   stage: staging
@@ -125,7 +125,7 @@ stage_deploy:
     url: http://$APP_IP
   only:
     - master
-  when: manual
+  #when: manual
   artifacts:
     paths:
       - stage_report.html
@@ -135,7 +135,7 @@ scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
   stage: scan
   variables:
-    DAST_WEBSITE: "https://sua-aplicacao.com"
+    DAST_WEBSITE: "http://$APP_IP"
   script:
     - /analyze
   artifacts:
