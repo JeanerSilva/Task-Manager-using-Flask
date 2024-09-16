@@ -12,8 +12,8 @@ stages:
   - security
   - review
   - staging
-  - scan
   - deploy 
+  - scan
   - monitoring
   - notify
 
