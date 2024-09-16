@@ -13,8 +13,8 @@ stages:
   - review
   - staging
   - deploy 
-  - scan
   - monitoring
+  - scan
   - notify
 
 #test_job:
