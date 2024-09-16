@@ -12,7 +12,7 @@ stages:
   - security
   - review
   - staging
-  - dast
+  - scan
   - deploy 
   - monitoring
   - notify
@@ -130,9 +130,9 @@ stage_deploy:
       - stage_report.html
     expire_in: 1 week
 
-dast:
+scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
-  stage: dast
+  stage: scan
   variables:
     DAST_WEBSITE: "https://sua-aplicacao.com"
   script:
