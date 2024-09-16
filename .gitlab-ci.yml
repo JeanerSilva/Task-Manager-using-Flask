@@ -108,39 +108,28 @@ stages:
 #      - review_report.html
 #    expire_in: 1 week
 
-stage_deploy:
-  stage: staging
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  services:
-    - docker:dind
-  script:
-    - echo "Deploying to stage environment"
-    - docker build -t ex-build-dev:latest .
-    - echo "Deploying the app"
-    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
-  environment:
-    name: stage
-    url: http://$APP_IP
+#stage_deploy:
+#  stage: staging
+#  variables:
+#    DOCKER_HOST: tcp://docker:2375
+#    DOCKER_TLS_CERTDIR: ""
+#  services:
+#    - docker:dind
+#  script:
+#    - echo "Deploying to stage environment"
+#    - docker build -t ex-build-dev:latest .
+#    - echo "Deploying the app"
+#    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
+#  environment:
+#    name: stage
+#    url: http://$APP_IP
   #only:
   #  - master
   #when: manual
-  artifacts:
-    paths:
-      - stage_report.html
-    expire_in: 1 week
-
-scan:
-  image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
-  stage: scan
-  variables:
-    DAST_WEBSITE: "http://$APP_IP"
-  script:
-    - /analyze
-  artifacts:
-    reports:
-      dast: gl-dast-report.json
+#  artifacts:
+#    paths:
+#      - stage_report.html
+#    expire_in: 1 week
 
 deploy_job:
    stage: deploy
@@ -223,3 +212,15 @@ monitoring_setup:
     url: http://$APP_IP
   only:
     - master
+
+
+scan:
+  image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
+  stage: scan
+  variables:
+    DAST_WEBSITE: "http://$APP_IP"
+  script:
+    - /analyze
+  artifacts:
+    reports:
+      dast: gl-dast-report.json
