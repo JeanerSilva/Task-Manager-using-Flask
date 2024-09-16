@@ -1,0 +1,15 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/*.log  # Caminho para os arquivos de log que o Filebeat vai coletar
+    # Você pode adicionar mais configurações para filtrar logs específicos
+
+output.elasticsearch:  # Configuração para enviar logs para o Elasticsearch
+  hosts: ["localhost:9200"]  # Endereço do Elasticsearch
+  username: "elastic"
+  password: "changeme"  # Substitua pela sua senha do Elasticsearch
+
+# Configuração para o Filebeat conectar ao Kibana (opcional)
+setup.kibana:
+  host: "localhost:5601"
