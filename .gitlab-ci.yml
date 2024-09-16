@@ -67,14 +67,7 @@ code_analysis:
    #  - test_job  
   script:
    - sonar-scanner \
-    -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. \
-    -Dsonar.host.url=$LOCALHOST_SONAR_IP \
-    -Dsonar.token=sqp_59a3279f25ca8b97dadc39de132eaec8f2b816e6 \
-    -Dsonar.python.coverage.reportPaths=coverage.xml \
-    -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html \
-    -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml \
-    -Dsonar.language=py \
-    -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+    -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=sqp_59a3279f25ca8b97dadc39de132eaec8f2b816e6 -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py  -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
    - cat coverage/coverage.xml
    - if [ -f coverage/coverage.xml]; then cat coverage/coverage.xml; else echo "coverage/coverage.xml não encontrado"; fi
    - sonar-scanner -D sonar.go.coverage.reportPaths=coverage/coverage.xml
