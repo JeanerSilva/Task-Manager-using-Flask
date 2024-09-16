@@ -60,17 +60,17 @@ stages:
 #      sast: result-bandit.json
 
 
-code_analysis:
-  stage: security
-  image: sonarsource/sonar-scanner-cli:latest
-   #dependencies:
-   #  - test_job  
-  script:
-   - sonar-scanner \
-    -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=sqb_4f06a8a9b373267461b8011ad9ac1ec4ed28f20b -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py  -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
-   - cat coverage/coverage.xml
-   - if [ -f coverage/coverage.xml]; then cat coverage/coverage.xml; else echo "coverage/coverage.xml não encontrado"; fi
-   - sonar-scanner -D sonar.go.coverage.reportPaths=coverage/coverage.xml
+#code_analysis:
+#  stage: security
+#  image: sonarsource/sonar-scanner-cli:latest
+#   #dependencies:
+#   #  - test_job  
+#  script:
+#   - sonar-scanner \
+#    -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=sqb_bbc90b2f5a5126c8b7442b2d9c7acdcc27babacc #-Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.#xmlReportPath=dependency-check-report.xml -Dsonar.language=py  -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+#   - cat coverage/coverage.xml
+#   - if [ -f coverage/coverage.xml]; then cat coverage/coverage.xml; else echo "coverage/coverage.xml não encontrado"; fi
+#   - sonar-scanner -D sonar.go.coverage.reportPaths=coverage/coverage.xml
 
 security_scan:
   stage: security
