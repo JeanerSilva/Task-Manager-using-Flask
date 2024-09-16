@@ -151,7 +151,8 @@ deploy_job:
    script:
      - docker build -t ex-build-dev:latest .
      - echo "Deploying the app"
-     - docker compose up --build -d
+     - docker compose up -d
+
 monitoring_setup:
   stage: monitoring
   image: docker:latest
@@ -207,11 +208,11 @@ monitoring_setup:
     - docker exec grafana grafana-cli plugins install grafana-simple-json-datasource
     - docker restart grafana
 
-  environment:
-    name: production
-    url: http://$APP_IP
-  only:
-    - master
+  #environment:
+  #  name: production
+  #  url: http://$APP_IP
+  #only:
+  #  - master
 
 
 scan:
