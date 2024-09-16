@@ -6,8 +6,8 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - FLASK_ENV=production
-      - SECRET_KEY=45cf93c4d41348cd9980674ade9a7356
-      - SQLALCHEMY_DATABASE_URI=sqlite:///site.db
+      - FLASK_ENV
+      - SECRET_KEY
+      - SQLALCHEMY_DATABASE_URI
     volumes:
       - .:/app
