@@ -126,7 +126,7 @@ stage_deploy:
   #only:
   #  - master
   #when: manual
-  #artifacts:
+  artifacts:
     paths:
       - stage_report.html
     expire_in: 1 week
