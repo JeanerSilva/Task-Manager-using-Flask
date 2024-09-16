@@ -130,29 +130,16 @@ stage_deploy:
       - stage_report.html
     expire_in: 1 week
 
-zap_security_scan:
+dast:
+  image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
   stage: dast
-  image: owasp/zap2docker-stable
-  dependencies:
-    - stage_deploy
+  variables:
+    DAST_WEBSITE: "https://sua-aplicacao.com"
   script:
-    - docker run -u zap -d --name zap -p 8081:5000 owasp/zap2docker-stable zap.sh -daemon -host 0.0.0.0 -port 5000
-    - sleep 15
-    - curl "http://localhost:8081/JSON/spider/action/scan/?url=http://$APP_IP&maxChildren=&recurse=&contextName=&subtreeOnly="
-    - sleep 15
-    - curl "http://localhost:8081/JSON/ascan/action/scan/?url=http://$APP_IP"
-    - sleep 60
-    - curl "http://localhost:8081/OTHER/core/other/htmlreport/" -o zap_report.html#
+    - /analyze
   artifacts:
-    paths:
-      - zap_report.html
-    expire_in: 1 week
-  after_script:
-    - docker stop zap
-    - docker rm zap
-    - docker stop my-app
-    - docker rm my-app
-    - docker stop todo_list_app
+    reports:
+      dast: gl-dast-report.json
 
 deploy_job:
    stage: deploy
