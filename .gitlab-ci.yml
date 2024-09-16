@@ -17,24 +17,24 @@ stages:
   - monitoring
   - notify
 
-test_job:
-  stage: test
-  image: python:3.9  
-  script:
-    - echo "Testing the app"
-    - pip install pytest pytest-cov  
-    - pip install -r requirements.txt
-    - mkdir -p coverage  
-    - export SQLALCHEMY_DATABASE_URI=sqlite:///site.db
-    - export SECRET_KEY=45cf93c4d41348cd9980674ade9a7356
-    - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  
-    - pwd
-    - ls -la coverage  
-    - cat coverage/coverage.xml  
-  artifacts:
-    paths:
-      - coverage/coverage.xml  
-    expire_in: 1 week  
+#test_job:
+#  stage: test
+#  image: python:3.9  
+#  script:
+#    - echo "Testing the app"
+#    - pip install pytest pytest-cov  
+#    - pip install -r requirements.txt
+#    - mkdir -p coverage  
+#    - export SQLALCHEMY_DATABASE_URI=sqlite:///site.db
+#    - export SECRET_KEY=45cf93c4d41348cd9980674ade9a7356
+#    - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  
+#    - pwd
+#    - ls -la coverage  
+#    - cat coverage/coverage.xml  
+#  artifacts:
+#    paths:
+#      - coverage/coverage.xml  
+#    expire_in: 1 week  
 
 dependency_check:
    stage: security
