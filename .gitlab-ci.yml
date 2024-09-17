@@ -39,13 +39,11 @@ test_job:
 dependency_check:
    stage: security
    image: owasp/dependency-check
-   script:      
-      - echo "Verificando dependencias"
-      - pwd 
-      - ls -la 
-      - Dependency-Check Core --project "Task-Manager-using-Flask" --scan . --format "HTML" --out dependency-check-report.html
-      - cat dependency-check-report.html
-      - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_f1672c79ecfac2eddd0c4b9ccb76f842bf8d2a89 -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+   script:
+      - dependency-check --project "Task-Manager-using-Flask" --scan /src --format "HTML" --out /src/dependency-check-report.html
+   artifacts:
+      paths:
+        - dependency-check-report.htm
 
 bandit-sast:
   stage: security
@@ -65,7 +63,7 @@ code_analysis:
   dependencies:
     - test_job  
   script:
-   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_f1672c79ecfac2eddd0c4b9ccb76f842bf8d2a89 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml 
+   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_f1672c79ecfac2eddd0c4b9ccb76f842bf8d2a89 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 security_scan:
   stage: security
