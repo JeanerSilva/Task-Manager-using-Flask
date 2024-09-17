@@ -6,16 +6,17 @@ variables:
   COMPOSE_DOCKER_CLI_BUILD: 0    
   LOCALHOST_SONAR_IP: http://10.44.0.11:9000
   APP_IP: http://localhost:5000
+  IMAGE_NAME: todo_app_img
 
 stages:
   - test
+  - build
   - security
   - review
   - staging
   - scan_dast
   - deploy 
   - monitoring
-
 
 test_job:
   stage: test
@@ -31,10 +32,15 @@ test_job:
     - pwd
     - ls -la coverage  
     - cat coverage/coverage.xml  
-#  artifacts:
-#    paths:
-#      - coverage/coverage.xml  
-#    expire_in: 7 days
+
+build_job:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t $IMAGE_NAME .
+
 
 dependency_check:
    stage: security
@@ -125,12 +131,14 @@ scan:
     DAST_TIMEOUT: "10m"
   before_script:
     - echo "Deploying the app"
-    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
+    - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
   script:
     - curl -I $DAST_WEBSITE
     - echo "DAST Website:1 $APP_IP"
     - /analyze --debug
     - ls -l
+  after_script:
+    - docker stop todo_list_app
   artifacts:
     reports:
       dast: gl-dast-report.json
