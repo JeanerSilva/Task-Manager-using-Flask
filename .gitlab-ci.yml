@@ -61,7 +61,7 @@ bandit-sast:
 
 code_analysis:
   stage: security
-  image: sonarsource/sonar-scanner-cli:7.6
+  image: sonarsource/sonar-scanner-cli:latest
   dependencies:
     - test_job  
   script:
