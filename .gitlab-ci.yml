@@ -110,7 +110,9 @@ scan:
 
 zap_security_scan:
   stage: scan_dast
-  image: zaproxy/zap-stable
+  image: 
+    name: zaproxy/zap-stable
+    entrypoint: [""]
   variables:
       DOCKER_HOST: tcp://docker:2375
       DOCKER_TLS_CERTDIR: ""
@@ -119,7 +121,7 @@ zap_security_scan:
   dependencies:
     - stage_deploy
   script:
-    - zap-baseline.py -t "$APP_URL"
+    - /zap/zap-baseline.py -t "$APP_IP" -r zap_report.html
   artifacts:
     paths:
       - zap_report.html
