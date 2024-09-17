@@ -9,7 +9,7 @@ variables:
   IMAGE_NAME: todo_app_img
 
 stages:
- # - test
+  - test
   - build
   - security
   - review
