@@ -123,7 +123,7 @@ zap_security_scan:
     - stage_deploy
   script:
     - docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-      -t https://www.example.com -g gen.conf -r testreport.html
+      -t http://localhost -r testreport.html
   artifacts:
     paths:
       - testreport.html
