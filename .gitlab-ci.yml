@@ -4,7 +4,7 @@ variables:
   DOCKER_CLIENT_TIMEOUT: 600
   COMPOSE_HTTP_TIMEOUT: 600    
   COMPOSE_DOCKER_CLI_BUILD: 0    
-  LOCALHOST_SONAR_IP: http://localhost:9000
+  LOCALHOST_SONAR_IP: http://10.44.0.11:9000
   APP_IP: http://localhost:5000
 
 stages:
@@ -62,8 +62,8 @@ bandit-sast:
 code_analysis:
   stage: security
   image: sonarsource/sonar-scanner-cli:latest
-   #dependencies:
-   #  - test_job  
+  dependencies:
+    - test_job  
   script:
    - sonar-scanner \
     -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=sqb_bbc90b2f5a5126c8b7442b2d9c7acdcc27babacc -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py  -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
