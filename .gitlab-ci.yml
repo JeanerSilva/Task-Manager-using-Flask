@@ -111,11 +111,11 @@ scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
   stage: scan_dast
   variables:
-    DAST_WEBSITE: "$APP_IP"
+    DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
   script:
-    - curl -I $DAST_WEBSITE
     - echo "DAST Website:1 $APP_IP"
+    - curl -I $DAST_WEBSITE
     - /analyze --debug
     - ls -l
   artifacts:
