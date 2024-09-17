@@ -31,9 +31,10 @@ test_job:
     - pwd
     - ls -la coverage  
     - cat coverage/coverage.xml  
-  artifacts:
-    paths:
-      - coverage/coverage.xml  
+#  artifacts:
+#    paths:
+#      - coverage/coverage.xml  
+#    expire_in: 7 days
 
 dependency_check:
    stage: security
