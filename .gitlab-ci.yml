@@ -116,7 +116,6 @@ deploy_job:
       DOCKER_TLS_CERTDIR: ""
    services:
       - docker:dind
-        command: ["--tls=false"]
    before_script:        
         - echo "Remove anterior"
         - PORT_CONTAINERS=$(docker ps --filter "publish=5000" -q)
