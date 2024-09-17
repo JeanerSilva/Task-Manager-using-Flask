@@ -108,7 +108,7 @@ scan:
     - /analyze 
 
 zap_security_scan:
-  stage: dast
+  stage: scan_dast
   image: owasp/zap2docker-stable
   variables:
       DOCKER_HOST: tcp://docker:2375
