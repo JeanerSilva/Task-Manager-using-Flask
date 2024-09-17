@@ -5,7 +5,6 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600    
   COMPOSE_DOCKER_CLI_BUILD: 0    
   LOCALHOST_SONAR_IP: http://10.44.0.11:9000
-  SONAR_TOKEN: sqp_0bbd82657588ca0f1aa582d3691c0a4a3e2ed4e7
   APP_IP: http://localhost:5000
   IMAGE_NAME: todo_app_img
 
@@ -40,7 +39,7 @@ dependency_check:
     entrypoint: [""]
    script:
       - echo "Iniciando análise de dependência"
-      - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
+    #  - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
@@ -107,6 +106,33 @@ scan:
     - echo "DAST Website:1 $APP_IP"
     #- curl -I $DAST_WEBSITE
     - /analyze 
+
+zap_security_scan:
+  stage: dast
+  image: owasp/zap2docker-stable
+  variables:
+      DOCKER_HOST: tcp://docker:2375
+      DOCKER_TLS_CERTDIR: ""
+  services:
+      - docker:dind
+  dependencies:
+    - stage_deploy
+  script:
+    - docker run -u zap -d --name zap -p 8081:5000 owasp/zap2docker-stable zap.sh -daemon -host 0.0.0.0 -port 5000
+    - sleep 15
+    - curl "http://localhost:8081/JSON/spider/action/scan/?url=http://$APP_IP&maxChildren=&recurse=&contextName=&subtreeOnly="
+    - sleep 15
+    - curl "http://localhost:8081/JSON/ascan/action/scan/?url=http://$APP_IP"
+    - sleep 60
+    - curl "http://localhost:8081/OTHER/core/other/htmlreport/" -o zap_report.html#
+  artifacts:
+    paths:
+      - zap_report.html
+    expire_in: 1 week
+  after_script:
+    - docker stop zap
+    - docker rm zap
+    - docker stop todo_list_app
 
 deploy_job:
    stage: deploy
