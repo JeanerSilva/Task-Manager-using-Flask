@@ -118,12 +118,16 @@ stage_deploy:
     url: $APP_IP
 
 scan:
-  image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
+  image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
   stage: scan_dast
   variables:
     DAST_WEBSITE: "$APP_IP"
+    DAST_TIMEOUT: "10m"
   script:
-    - /analyze
+    - curl -I $DAST_WEBSITE
+    - echo "DAST Website:1 $APP_IP"
+    - /analyze --debug
+    - ls -l
   artifacts:
     reports:
       dast: gl-dast-report.json
