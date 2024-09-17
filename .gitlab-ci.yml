@@ -37,7 +37,7 @@ dependency_check:
    stage: security
    image: owasp/dependency-check
    script:
-      - --entrypoint /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
+      - --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
