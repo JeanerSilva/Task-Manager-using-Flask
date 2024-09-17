@@ -121,10 +121,11 @@ zap_security_scan:
   dependencies:
     - stage_deploy
   script:
-    - /zap/zap-baseline.py -t "$APP_IP" -r zap_report.html
+    - mkdir -p $(pwd)/zap_report
+    - /zap/zap-baseline.py -t "$APP_IP" -r zap_report/zap_report.html
   artifacts:
     paths:
-      - zap_report.html
+      - zap_report/zap_report.html
     expire_in: 1 week
 
 
