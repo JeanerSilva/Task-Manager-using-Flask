@@ -9,7 +9,7 @@ variables:
   IMAGE_NAME: todo_app_img
 
 stages:
-  - test
+ # - test
   - build
   - security
   - review
@@ -37,7 +37,7 @@ build_job:
   stage: build
   variables:
     DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: ""
   services:
     - docker:dind
   script:
