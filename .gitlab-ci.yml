@@ -47,7 +47,7 @@ dependency_check:
    stage: security
    image: owasp/dependency-check
    script:
-      - dependency-check --project "Task-Manager-using-Flask" --scan /src --format "HTML" --out /src/dependency-check-report.html
+      - dependency-check --project "Task-Manager-using-Flask" --scan /app --format "HTML" --out /app/dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
@@ -108,21 +108,21 @@ review_job:
       - review_report.html
     expire_in: 1 week
 
-#stage_deploy:
-#  stage: staging
-#  variables:
-#    DOCKER_HOST: tcp://docker:2375
-#    DOCKER_TLS_CERTDIR: ""
-#  services:
-#    - docker:dind
-#  script:
-#    - echo "Deploying to stage environment"
-#    - docker build -t ex-build-dev:latest .
-#    - echo "Deploying the app"
-#    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
-#  environment:
-#    name: stage
-#    url: $APP_IP
+stage_deploy:
+  stage: staging
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  script:
+    - echo "Deploying to stage environment"
+    - docker build -t ex-build-dev:latest .
+    - echo "Deploying the app"
+    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
+  environment:
+    name: stage
+    url: $APP_IP
 
 scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
@@ -130,16 +130,11 @@ scan:
   variables:
     DAST_WEBSITE: "$APP_IP"
     DAST_TIMEOUT: "10m"
-  before_script:
-    - echo "Deploying the app"
-    - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
   script:
     - curl -I $DAST_WEBSITE
     - echo "DAST Website:1 $APP_IP"
     - /analyze --debug
     - ls -l
-  after_script:
-    - docker stop todo_list_app
   artifacts:
     reports:
       dast: gl-dast-report.json
