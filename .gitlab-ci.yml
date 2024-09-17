@@ -115,7 +115,7 @@ scan:
     DAST_TIMEOUT: "10m"
   script:
     - echo "DAST Website:1 $APP_IP"
-    - curl -I $DAST_WEBSITE
+    #- curl -I $DAST_WEBSITE
     - /analyze --debug
     - ls -l
   artifacts:
