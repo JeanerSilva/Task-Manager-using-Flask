@@ -91,10 +91,10 @@ stage_deploy:
   script:
     - echo "Deploying to stage environment"
     - docker build -t $IMAGE_NAME .
-    - docker run --name todo_list_app --network host -d -p 5000:5000 $IMAGE_NAME
+    - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
   environment:
     name: staging
-    url: http://localhost:5000
+    url: $APP_IP
 
 scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
@@ -122,8 +122,7 @@ zap_security_scan:
   dependencies:
     - stage_deploy
   script:
-    - docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-      -t http://localhost -r testreport.html
+    - docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost -r testreport.html
   artifacts:
     paths:
       - testreport.html
