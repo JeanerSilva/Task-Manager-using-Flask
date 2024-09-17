@@ -47,7 +47,7 @@ dependency_check:
    stage: security
    image: owasp/dependency-check
    script:
-      - Dependency-Check --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
+      - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
@@ -120,9 +120,6 @@ scan:
     #- curl -I $DAST_WEBSITE
     - /analyze 
     - ls -l
-  artifacts:
-    reports:
-      dast: gl-dast-report.json    
 
 deploy_job:
    stage: deploy
