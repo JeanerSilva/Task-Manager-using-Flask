@@ -35,12 +35,13 @@ test_job:
 
 build_job:
   stage: build
-  image: docker:latest
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: "/certs"
   services:
     - docker:dind
   script:
     - docker build -t $IMAGE_NAME .
-
 
 dependency_check:
    stage: security
