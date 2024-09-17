@@ -12,9 +12,10 @@ stages:
   - security
   - review
   - staging
+  - scan_dast
   - deploy 
   - monitoring
-  - scan
+
 
 test_job:
   stage: test
@@ -35,100 +36,107 @@ test_job:
       - coverage/coverage.xml  
     expire_in: 1 week  
 
-#dependency_check:
-#   stage: security
-#   image: owasp/dependency-check
-#   script:      
-#      - echo "Verificando dependencias"
-#      - pwd 
-#      - ls -la 
-#      - Dependency-Check Core --project "Task-Manager-using-Flask" --scan . --format "HTML" --out dependency-check-report.html
-#      - cat dependency-check-report.html
-#      - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+dependency_check:
+   stage: security
+   image: owasp/dependency-check
+   script:      
+      - echo "Verificando dependencias"
+      - pwd 
+      - ls -la 
+      - Dependency-Check Core --project "Task-Manager-using-Flask" --scan . --format "HTML" --out dependency-check-report.html
+      - cat dependency-check-report.html
+      - sonar-scanner -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
-#bandit-sast:
-#  stage: security
-#  image: python:3.9
-#  script:
-#    - pip install bandit
-#    - bandit --version
-#    - bandit -r . --format json --output result-bandit.json
-#  allow_failure: true
-#  artifacts:
-#    reports:
-#      sast: result-bandit.json
+bandit-sast:
+  stage: security
+  image: python:3.9
+  script:
+    - pip install bandit
+    - bandit --version
+    - bandit -r . --format json --output result-bandit.json
+  allow_failure: true
+  artifacts:
+    reports:
+      sast: result-bandit.json
 
+code_analysis:
+  stage: security
+  image: sonarsource/sonar-scanner-cli:latest
+   #dependencies:
+   #  - test_job  
+  script:
+   - sonar-scanner \
+    -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=sqb_bbc90b2f5a5126c8b7442b2d9c7acdcc27babacc -Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.xmlReportPath=dependency-check-report.xml -Dsonar.language=py  -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
+   - cat coverage/coverage.xml
+   - if [ -f coverage/coverage.xml]; then cat coverage/coverage.xml; else echo "coverage/coverage.xml não encontrado"; fi
+   - sonar-scanner -D sonar.go.coverage.reportPaths=coverage/coverage.xml
 
-#code_analysis:
-#  stage: security
-#  image: sonarsource/sonar-scanner-cli:latest
-#   #dependencies:
-#   #  - test_job  
-#  script:
-#   - sonar-scanner \
-#    -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=sqb_bbc90b2f5a5126c8b7442b2d9c7acdcc27babacc #-Dsonar.python.coverage.reportPaths=coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html -Dsonar.dependencyCheck.#xmlReportPath=dependency-check-report.xml -Dsonar.language=py  -Dsonar.dependencyCheck.jsonReportPath=dependency-check-report.json
-#   - cat coverage/coverage.xml
-#   - if [ -f coverage/coverage.xml]; then cat coverage/coverage.xml; else echo "coverage/coverage.xml não encontrado"; fi
-#   - sonar-scanner -D sonar.go.coverage.reportPaths=coverage/coverage.xml
+security_scan:
+  stage: security
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - apk add --no-cache curl
+    - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+  script:
+    - docker build -t ex-build-dev:latest .
+    - trivy image --severity HIGH,CRITICAL ex-build-dev:latest
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - /root/.cache/trivy
+  only:
+    - master
 
-#security_scan:
-#  stage: security
-#  image: docker:stable
-#  services:
-#    - docker:dind
-#  variables:
-#    DOCKER_DRIVER: overlay2
-#  before_script:
-#    - apk add --no-cache curl
-#    - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-#  script:
-#    - docker build -t ex-build-dev:latest .
-#    - trivy image --severity HIGH,CRITICAL ex-build-dev:latest
-#  cache:
-#    key: ${CI_COMMIT_REF_SLUG}
-#    paths:
-#      - /root/.cache/trivy
-#  only:
-#    - master
+review_job:
+  stage: review
+  script:
+    - echo "Deploying review environment"
+    - docker build -t review-environment .
+    - docker run -d -p 5000:5000 review-environment
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.$APP_IP
+  only:
+    - merge_requests
+  artifacts:
+    paths:
+      - review_report.html
+    expire_in: 1 week
 
-#review_job:
-#  stage: review
-#  script:
-#    - echo "Deploying review environment"
-#    - docker build -t review-environment .
-#    - docker run -d -p 5000:5000 review-environment
-#  environment:
-#    name: review/$CI_COMMIT_REF_NAME
-#    url: http://$CI_ENVIRONMENT_SLUG.$APP_IP
-#  only:
-#    - merge_requests
-#  artifacts:
-#    paths:
-#      - review_report.html
-#    expire_in: 1 week
+stage_deploy:
+  stage: staging
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  script:
+    - echo "Deploying to stage environment"
+    - docker build -t ex-build-dev:latest .
+    - echo "Deploying the app"
+    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
+  environment:
+    name: stage
+    url: http://$APP_IP
+  artifacts:
+    paths:
+      - stage_report.html
+    expire_in: 1 week
 
-#stage_deploy:
-#  stage: staging
-#  variables:
-#    DOCKER_HOST: tcp://docker:2375
-#    DOCKER_TLS_CERTDIR: ""
-#  services:
-#    - docker:dind
-#  script:
-#    - echo "Deploying to stage environment"
-#    - docker build -t ex-build-dev:latest .
-#    - echo "Deploying the app"
-#    - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
-#  environment:
-#    name: stage
-#    url: http://$APP_IP
-  #only:
-  #  - master
-  #when: manual
-#  artifacts:
-#    paths:
-#      - stage_report.html
-#    expire_in: 1 week
+scan:
+  image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
+  stage: scan_dast
+  variables:
+    DAST_WEBSITE: "http://$APP_IP"
+  script:
+    - /analyze
+  artifacts:
+    reports:
+      dast: gl-dast-report.json
 
 deploy_job:
    stage: deploy
@@ -207,20 +215,4 @@ monitoring_setup:
     - docker exec grafana grafana-cli plugins install grafana-simple-json-datasource
     - docker restart grafana
 
-  #environment:
-  #  name: production
-  #  url: http://$APP_IP
-  #only:
-  #  - master
 
-
-scan:
-  image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
-  stage: scan
-  variables:
-    DAST_WEBSITE: "http://$APP_IP"
-  script:
-    - /analyze
-  artifacts:
-    reports:
-      dast: gl-dast-report.json
