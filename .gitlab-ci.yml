@@ -35,9 +35,11 @@ test_job:
 
 dependency_check:
    stage: security
-   image: owasp/dependency-check
+   image:
+    name: owasp/dependency-check
+    entrypoint: [""]
    script:
-      - --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
+      - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
