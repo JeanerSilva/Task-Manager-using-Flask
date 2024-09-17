@@ -108,7 +108,7 @@ scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
   stage: scan_dast
   dependencies:
-    - deploy_staging
+    - stage_deploy
   variables:
     DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
