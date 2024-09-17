@@ -112,7 +112,7 @@ scan:
 zap_security_scan:
   stage: scan_dast
   image: 
-    name: ghcr.io/zaproxy/zaproxy:stable
+    name: docker:stable
   variables:
       DOCKER_HOST: tcp://docker:2375
       DOCKER_TLS_CERTDIR: ""
@@ -122,7 +122,8 @@ zap_security_scan:
   dependencies:
     - stage_deploy
   script:
-    - zap-baseline.py -t $APP_IP -g gen.conf -r testreport.html
+    - docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+      -t https://www.example.com -g gen.conf -r testreport.html
   artifacts:
     paths:
       - testreport.html
