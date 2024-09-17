@@ -9,11 +9,12 @@ variables:
   IMAGE_NAME: todo_app_img
 
 stages:
+  - staging
+  - scan_dast
   - test
   - security
   - review
-  - staging
-  - scan_dast
+  
   - deploy 
   - monitoring
 
@@ -109,7 +110,7 @@ scan:
 
 zap_security_scan:
   stage: scan_dast
-  image: owasp/zap2docker-stable
+  image: zaproxy/zap-stable
   variables:
       DOCKER_HOST: tcp://docker:2375
       DOCKER_TLS_CERTDIR: ""
@@ -118,21 +119,12 @@ zap_security_scan:
   dependencies:
     - stage_deploy
   script:
-    - docker run -u zap -d --name zap -p 8081:5000 owasp/zap2docker-stable zap.sh -daemon -host 0.0.0.0 -port 5000
-    - sleep 15
-    - curl "http://localhost:8081/JSON/spider/action/scan/?url=http://$APP_IP&maxChildren=&recurse=&contextName=&subtreeOnly="
-    - sleep 15
-    - curl "http://localhost:8081/JSON/ascan/action/scan/?url=http://$APP_IP"
-    - sleep 60
-    - curl "http://localhost:8081/OTHER/core/other/htmlreport/" -o zap_report.html#
+    - zap-baseline.py -t "$APP_URL"
   artifacts:
     paths:
       - zap_report.html
     expire_in: 1 week
-  after_script:
-    - docker stop zap
-    - docker rm zap
-    - docker stop todo_list_app
+
 
 deploy_job:
    stage: deploy
