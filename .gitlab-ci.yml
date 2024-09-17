@@ -67,8 +67,6 @@ bandit-sast:
 code_analysis:
   stage: security
   image: sonarsource/sonar-scanner-cli:latest
-  dependencies:
-    - test_job  
   script:
    - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_f1672c79ecfac2eddd0c4b9ccb76f842bf8d2a89 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
@@ -94,29 +92,30 @@ security_scan:
 
 stage_deploy:
   stage: staging
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
+  image: docker:latest
   services:
     - docker:dind
   script:
     - echo "Deploying to stage environment"
-    - docker build -t $IMAGE_NAME .
     - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
+  artifacts:
+    expire_in: 1 hour # Define o tempo que este job vai reter seus artefatos e logs
   environment:
-    name: stage
-    url: $APP_IP
+    name: staging
+    url: http://localhost:5000
 
 scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
   stage: scan_dast
+  dependencies:
+    - deploy_staging
   variables:
     DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
   script:
     - echo "DAST Website:1 $APP_IP"
     #- curl -I $DAST_WEBSITE
-    - /analyze --debug
+    - /analyze 
     - ls -l
   artifacts:
     reports:
