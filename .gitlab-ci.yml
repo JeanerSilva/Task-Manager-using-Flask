@@ -115,17 +115,13 @@ stage_deploy:
     - docker run --name todo_list_app -d -p 5000:5000 ex-build-dev:latest
   environment:
     name: stage
-    url: http://$APP_IP
-  artifacts:
-    paths:
-      - stage_report.html
-    expire_in: 1 week
+    url: $APP_IP
 
 scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:latest"
   stage: scan_dast
   variables:
-    DAST_WEBSITE: "http://$APP_IP"
+    DAST_WEBSITE: "$APP_IP"
   script:
     - /analyze
   artifacts:
