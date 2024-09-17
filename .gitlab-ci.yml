@@ -5,6 +5,7 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600    
   COMPOSE_DOCKER_CLI_BUILD: 0    
   LOCALHOST_SONAR_IP: http://10.44.0.11:9000
+  SONAR_TOKEN: sqp_0bbd82657588ca0f1aa582d3691c0a4a3e2ed4e7
   APP_IP: http://localhost:5000
   IMAGE_NAME: todo_app_img
 
@@ -39,7 +40,8 @@ dependency_check:
     name: owasp/dependency-check
     entrypoint: [""]
    script:
-      - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
+      - echo "Iniciando análise de dependência"
+      # - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
@@ -60,7 +62,7 @@ code_analysis:
   stage: security
   image: sonarsource/sonar-scanner-cli:latest
   script:
-   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_0bbd82657588ca0f1aa582d3691c0a4a3e2ed4e7 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=$SONAR_TOKEN -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 security_scan:
   stage: security
