@@ -112,22 +112,20 @@ scan:
 zap_security_scan:
   stage: scan_dast
   image: 
-    name: zaproxy/zap-stable
-    entrypoint: [""]
+    name: ghcr.io/zaproxy/zaproxy:stable
   variables:
       DOCKER_HOST: tcp://docker:2375
       DOCKER_TLS_CERTDIR: ""
+      DOCKER_DRIVER: overlay2
   services:
       - docker:dind
   dependencies:
     - stage_deploy
   script:
-    - mkdir -p $(pwd)/zap_report
-    - /zap/zap-baseline.py -t "$APP_IP" 
-    #-r zap_report/zap_report.html
+    - zap-baseline.py -t $APP_IP -g gen.conf -r testreport.html
   artifacts:
     paths:
-      - zap_report/zap_report.html
+      - testreport.html
     expire_in: 1 week
 
 
