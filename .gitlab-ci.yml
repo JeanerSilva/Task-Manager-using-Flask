@@ -47,7 +47,7 @@ dependency_check:
    stage: security
    image: owasp/dependency-check
    script:
-      - --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
+      - dependency-check --project "Task"  --scan . --format "HTML" --out ./dependency-check-report.html
    artifacts:
       paths:
         - dependency-check-report.htm
@@ -67,6 +67,8 @@ bandit-sast:
 code_analysis:
   stage: security
   image: sonarsource/sonar-scanner-cli:latest
+  dependencies:
+    - test_job  
   script:
    - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_f1672c79ecfac2eddd0c4b9ccb76f842bf8d2a89 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
@@ -92,14 +94,15 @@ security_scan:
 
 stage_deploy:
   stage: staging
-  image: docker:latest
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   services:
     - docker:dind
   script:
     - echo "Deploying to stage environment"
-    - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
-  artifacts:
-    expire_in: 1 hour # Define o tempo que este job vai reter seus artefatos e logs
+    - docker build -t $IMAGE_NAME .
+    - docker run --name --network host todo_list_app -d -p 5000:5000 $IMAGE_NAME
   environment:
     name: staging
     url: http://localhost:5000
@@ -119,7 +122,7 @@ scan:
     - ls -l
   artifacts:
     reports:
-      dast: gl-dast-report.json
+      dast: gl-dast-report.json    
 
 deploy_job:
    stage: deploy
