@@ -34,7 +34,7 @@ test_job:
   artifacts:
     paths:
       - coverage/coverage.xml  
-    expire_in: 1 week  
+    expire_in: 7 days
 
 dependency_check:
    stage: security
