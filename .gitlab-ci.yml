@@ -58,7 +58,7 @@ code_analysis:
   stage: security
   image: sonarsource/sonar-scanner-cli:latest
   script:
-   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_f1672c79ecfac2eddd0c4b9ccb76f842bf8d2a89 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask2 -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=sqp_0bbd82657588ca0f1aa582d3691c0a4a3e2ed4e7 -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 security_scan:
   stage: security
