@@ -11,6 +11,16 @@ print(os.getenv('SECRET_KEY'))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 db = SQLAlchemy(app)
 
+@app.after_request
+def add_headers(response):
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'  # or 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Server'] = 'Custom-Server'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=()'
+    return response
+
 @app.before_request
 def create_tables():
     db.create_all()
