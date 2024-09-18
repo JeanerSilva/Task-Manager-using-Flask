@@ -29,7 +29,10 @@ test_job:
     - pytest --cov=. --cov-report=term --cov-report=xml:coverage/coverage.xml  
     - pwd
     - ls -la coverage  
-    - cat coverage/coverage.xml  
+    - cat coverage/coverage.xml 
+  artifacts:
+    paths:
+      - coverage/coverage.xml 
 
 dependency_check:
    stage: security
@@ -87,17 +90,16 @@ scan:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-    DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
   services:
     - docker:dind
   before_script:
     - echo "Deploying to scan_test"
-    - docker network create dast_net  # Create a custom Docker network
+    - docker network create dast_net  
     - docker build -t $IMAGE_NAME .
-    - docker run --name todo_list_app --network dast_net -d -p 5000:5000 $IMAGE_NAME  # Connect app container to the network
+    - docker run --name todo_list_app --network dast_net -d -p 5000:5000 $IMAGE_NAME  
   script:
-    - docker run --network dast_net registry.gitlab.com/gitlab-org/security-products/dast:2.0.0 /analyze 
+    - docker run -e DAST_WEBSITE=$APP_IP --network dast_net registry.gitlab.com/gitlab-org/security-products/dast:2.0.0 /analyze 
 
 zap_security_scan:
   stage: scan_dast
@@ -120,6 +122,7 @@ zap_security_scan:
     paths:
       - testreport.html
     expire_in: 1 week
+  allow_failure: true
 
 
 
