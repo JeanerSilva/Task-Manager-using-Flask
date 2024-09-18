@@ -42,10 +42,10 @@ dependency_check:
    script:
       - echo "Iniciando análise de dependência"
       - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out dependency-check-report.html
-      -
+      - cp /builds/root/task-manager-using-flask/dependency-check-report.htmldependency-check-report.htm . 
    artifacts:
       paths:
-        - /builds/root/task-manager-using-flask/dependency-check-report.html
+        - /builds/root/task-manager-using-flask/dependency-check-report.htmldependency-check-report.htm
 
 bandit-sast:
   stage: security
@@ -127,7 +127,6 @@ zap_security_scan:
   artifacts:
     paths:
       - testreport.html
-      - /home/zap/zap_out.json
     expire_in: 1 week
 
 
