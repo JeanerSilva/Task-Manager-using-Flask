@@ -30,11 +30,8 @@ test_job:
     - pwd
     - ls -la coverage  
     - cat coverage/coverage.xml 
-  artifacts:
-    paths:
-      - coverage/coverage.xml 
 
-dependency_check:
+owasp_dependency_check:
    stage: security
    image:
     name: owasp/dependency-check
@@ -55,13 +52,13 @@ bandit-sast:
     - bandit -r . --format json --output result-bandit.json
   allow_failure: true
 
-code_analysis:
+sonar_code_analysis:
   stage: security
   image: sonarsource/sonar-scanner-cli:latest
   script:
-   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=http://10.44.0.11:9000 -Dsonar.token=$SONAR_TOKEN -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
+   - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=$SONAR_TOKEN -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
-security_scan:
+trivy_security_scan:
   stage: security
   image: docker:stable
   services:
@@ -82,7 +79,7 @@ security_scan:
       - /root/.cache/trivy
 
 
-scan:
+dast_gitlab_scan:
   stage: scan_dast
   image: 
     name: docker:stable
