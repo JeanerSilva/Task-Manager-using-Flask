@@ -17,8 +17,11 @@ def add_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Server'] = 'Custom-Server'
     response.headers['Content-Security-Policy'] = "default-src 'self'"
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    if response.status_code == 200:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=()'
+    response.headers['Server'] = 'Custom-Server' 
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'"
     return response
 
 @app.before_request
