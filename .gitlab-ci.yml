@@ -79,10 +79,16 @@ security_scan:
       - /root/.cache/trivy
 
 
-
 scan:
-  image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
   stage: scan_dast
+  image: 
+    name: docker:stable
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  services:
+    - docker:dind
   variables:
     DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
@@ -92,9 +98,7 @@ scan:
     - docker build -t $IMAGE_NAME .
     - docker run --name todo_list_app --network dast_net -d -p 5000:5000 $IMAGE_NAME  # Connect app container to the network
   script:
-    - echo "DAST Website:1 $APP_IP"
-    #- curl -I $DAST_WEBSITE
-    - /analyze 
+    - docker run --network dast_net registry.gitlab.com/gitlab-org/security-products/dast:2.0.0 /analyze 
 
 zap_security_scan:
   stage: scan_dast
