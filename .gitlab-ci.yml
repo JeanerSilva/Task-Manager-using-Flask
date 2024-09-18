@@ -87,11 +87,10 @@ scan:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-  services:
-    - docker:dind
-  variables:
     DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
+  services:
+    - docker:dind
   before_script:
     - echo "Deploying to scan_test"
     - docker network create dast_net  # Create a custom Docker network
