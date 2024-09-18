@@ -78,29 +78,19 @@ security_scan:
     paths:
       - /root/.cache/trivy
 
-stage_deploy:
-  stage: staging
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  services:
-    - docker:dind
-  script:
-    - echo "Deploying to stage environment"
-    - docker build -t $IMAGE_NAME .
-    - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
-  environment:
-    name: staging
-    url: $APP_IP
+
 
 scan:
   image: "registry.gitlab.com/gitlab-org/security-products/dast:2.0.0"
   stage: scan_dast
-  dependencies:
-    - stage_deploy
   variables:
     DAST_WEBSITE: $APP_IP
     DAST_TIMEOUT: "10m"
+  before_script:
+    - echo "Deploying to scan_test"
+    - docker network create dast_net  # Create a custom Docker network
+    - docker build -t $IMAGE_NAME .
+    - docker run --name todo_list_app --network dast_net -d -p 5000:5000 $IMAGE_NAME  # Connect app container to the network
   script:
     - echo "DAST Website:1 $APP_IP"
     #- curl -I $DAST_WEBSITE
@@ -111,21 +101,23 @@ zap_security_scan:
   image: 
     name: docker:stable
   variables:
-      DOCKER_HOST: tcp://docker:2375
-      DOCKER_TLS_CERTDIR: ""
-      DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
   services:
-      - docker:dind
+    - docker:dind
   before_script:
     - echo "Deploying to scan_test"
+    - docker network create zap_net  # Create a custom Docker network
     - docker build -t $IMAGE_NAME .
-    - docker run --name todo_list_app -d -p 5000:5000 $IMAGE_NAME
+    - docker run --name todo_list_app --network zap_net -d -p 5000:5000 $IMAGE_NAME  # Connect app container to the network
   script:
-    - docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t $APP_IP -r testreport.html
+    - docker run --network zap_net -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://todo_list_app:5000 -r testreport.html  # Use the container name for the app
   artifacts:
     paths:
       - testreport.html
     expire_in: 1 week
+
 
 
 deploy_job:
