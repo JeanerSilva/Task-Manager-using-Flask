@@ -9,13 +9,13 @@ variables:
   IMAGE_NAME: todo_app_img
 
 stages:
+  - security2
   - staging
   - scan_dast
   - scan_dast2
   - test
-  - security
   - review
-  
+  - security
   - deploy 
   - monitoring
 
@@ -35,7 +35,7 @@ test_job:
     - cat coverage/coverage.xml  
 
 dependency_check:
-   stage: security
+   stage: security2
    image:
     name: owasp/dependency-check
     entrypoint: [""]
