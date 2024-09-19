@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'Task_manager'
+    static_configs:
+      - targets: ['10.44.0.11:5000']
