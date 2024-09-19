@@ -33,7 +33,6 @@ test_job:
   artifacts:
     paths:
       - coverage/coverage.xml
-    expire_in: 1 week
 
 owasp_dependency_check:
    stage: security
@@ -43,6 +42,9 @@ owasp_dependency_check:
    script:
       - echo "Iniciando análise de dependência"
       - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out dependency-check-report.html
+  artifacts:
+    paths:
+      - dependency-check-report.html
 
 bandit-sast:
   stage: security
@@ -52,6 +54,9 @@ bandit-sast:
     - bandit --version
     - bandit -r . --format json --output result-bandit.json
   allow_failure: true
+  artifacts:
+    paths:
+      - result-bandit.json
 
 sonar_code_analysis:
   stage: security
@@ -73,11 +78,14 @@ trivy_security_scan:
     - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
   script:
     - docker build -t ex-build-dev:latest .
-    - trivy image --severity HIGH,CRITICAL ex-build-dev:latest
+    - trivy image --severity HIGH,CRITICAL ex-build-dev:latest > resultado_trivy.txt
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - /root/.cache/trivy
+  artifacts:
+    paths:
+      - resultado_trivy.txt
 
 
 dast_gitlab_scan:
@@ -111,15 +119,15 @@ zap_security_scan:
     - docker:dind
   before_script:
     - echo "Deploying to scan_test"
-    - docker network create zap_net  # Create a custom Docker network
+    - docker network create zap_net  
     - docker build -t $IMAGE_NAME .
-    - docker run --name todo_list_app --network zap_net -d -p 5000:5000 $IMAGE_NAME  # Connect app container to the network
+    - docker run --name todo_list_app --network zap_net -d -p 5000:5000 $IMAGE_NAME  
   script:
-    - docker run --network zap_net -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://todo_list_app:5000 -r testreport.html  # Use the container name for the app
-
+    - docker run --network zap_net -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://todo_list_app:5000 -r testreport.html  
   allow_failure: true
-
-
+    artifacts:
+    paths:
+      - testreport.html
 
 deploy_job:
    stage: deploy
