@@ -10,9 +10,8 @@ variables:
 
 stages:
   - test
-  - staging
+  - scan_sast
   - scan_dast
-  - security
   - deploy 
 
 test_job:
@@ -34,7 +33,7 @@ test_job:
       - coverage/coverage.xml
 
 owasp_dependency_check:
-   stage: security
+   stage: scan_sast
    image:
     name: owasp/dependency-check
     entrypoint: [""]
@@ -46,7 +45,7 @@ owasp_dependency_check:
       - dependency-check-report.html
 
 bandit-sast:
-  stage: security
+  stage: scan_sast
   image: python:3.9
   script:
     - pip install bandit
@@ -58,13 +57,13 @@ bandit-sast:
       - result-bandit.json
 
 sonar_code_analysis:
-  stage: security
+  stage: scan_sast
   image: sonarsource/sonar-scanner-cli:latest
   script:
    - sonar-scanner -Dsonar.projectKey=Task-Manager-using-Flask -Dsonar.sources=. -Dsonar.host.url=$LOCALHOST_SONAR_IP -Dsonar.token=$SONAR_TOKEN -Dsonar.python.coverage.reportPaths=coverage/coverage.xml -Dsonar.dependencyCheck.htmlReportPath=dependency-check-report.html
 
 trivy_security_scan:
-  stage: security
+  stage: scan_sast
   image: docker:stable
   services:
     - docker:dind
@@ -75,10 +74,10 @@ trivy_security_scan:
   before_script:
     - apk add --no-cache curl
     - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin latest
-
   script:
     - docker build -t ex-build-dev:latest .
-    - trivy image --severity HIGH,CRITICAL ex-build-dev:latest > resultado_trivy.txt
+    - trivy image --output resultado_trivy.txt --severity HIGH,CRITICAL ex-build-dev:latest 
+    - trivy image --format json ex-build-dev:latest > resultado.json
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -86,6 +85,7 @@ trivy_security_scan:
   artifacts:
     paths:
       - resultado_trivy.txt
+      - resultado.json
 
 
 dast_gitlab_scan:
