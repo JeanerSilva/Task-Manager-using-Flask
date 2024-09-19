@@ -40,7 +40,7 @@ owasp_dependency_check:
     entrypoint: [""]
    script:
       - echo "Iniciando análise de dependência"
-      - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out dependency-check-report.html
+      - /usr/share/dependency-check/bin/dependency-check.sh  --nvdApiKey 8151ad02-01a3-4fa4-af7d-a495f225d998 --project "Task"  --scan . --format "HTML" --out dependency-check-report.html
    artifacts:
     paths:
       - dependency-check-report.html
