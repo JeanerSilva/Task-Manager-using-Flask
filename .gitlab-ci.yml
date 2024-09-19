@@ -5,7 +5,7 @@ variables:
   COMPOSE_HTTP_TIMEOUT: 600    
   COMPOSE_DOCKER_CLI_BUILD: 0    
   LOCALHOST_SONAR_IP: http://10.44.0.11:9000
-  APP_IP: http://localhost:5000
+  APP_IP: http://10.44.0.11:5000
   IMAGE_NAME: todo_app_img
 
 stages:
