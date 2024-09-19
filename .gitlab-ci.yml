@@ -30,6 +30,10 @@ test_job:
     - pwd
     - ls -la coverage  
     - cat coverage/coverage.xml 
+  artifacts:
+    paths:
+      - coverage/coverage.xml
+    expire_in: 1 week
 
 owasp_dependency_check:
    stage: security
@@ -39,9 +43,6 @@ owasp_dependency_check:
    script:
       - echo "Iniciando análise de dependência"
       - /usr/share/dependency-check/bin/dependency-check.sh --project "Task"  --scan . --format "HTML" --out dependency-check-report.html
-   artifacts:
-      paths:
-        - dependency-check-report.html
 
 bandit-sast:
   stage: security
@@ -115,10 +116,7 @@ zap_security_scan:
     - docker run --name todo_list_app --network zap_net -d -p 5000:5000 $IMAGE_NAME  # Connect app container to the network
   script:
     - docker run --network zap_net -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://todo_list_app:5000 -r testreport.html  # Use the container name for the app
-  artifacts:
-    paths:
-      - testreport.html
-    expire_in: 1 week
+
   allow_failure: true
 
 
